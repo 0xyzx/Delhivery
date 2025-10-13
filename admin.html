@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - RapidShip</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .nav-link.active { background-color: rgba(71, 85, 105, 0.5); color: white; }
+        .modal-container { background-color: rgba(0, 0, 0, 0.5); }
+        .modal-content { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .table-placeholder td { text-align: center; color: #94a3b8; padding: 2rem; }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 flex-shrink-0 bg-slate-800 text-slate-300 flex flex-col">
+            <div class="h-16 flex items-center px-6 border-b border-slate-700">
+                <i class="ph-bold ph-package text-3xl text-blue-400 mr-3"></i>
+                <span class="text-xl font-bold text-white">RapidShip</span>
+            </div>
+            <nav id="sidebarNav" class="flex-grow pt-4">
+                <ul>
+                    <li><a href="#" data-view="dashboardView" class="nav-link flex items-center px-6 py-3 transition-colors active"><i class="ph-fill ph-house mr-3 text-lg"></i>Dashboard</a></li>
+                    <li><a href="#" data-view="ordersView" class="nav-link flex items-center px-6 py-3 hover:bg-slate-700/50 transition-colors"><i class="ph-fill ph-shopping-bag-open mr-3 text-lg"></i>Orders</a></li>
+                    <li><a href="#" data-view="partnersView" class="nav-link flex items-center px-6 py-3 hover:bg-slate-700/50 transition-colors"><i class="ph-fill ph-motorcycle mr-3 text-lg"></i>Partners</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col">
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
+                <h1 id="headerTitle" class="text-xl font-bold text-slate-800">Dashboard</h1>
+                <div id="authStatus" class="flex items-center space-x-2 text-sm font-semibold text-red-500">
+                    <i class="ph-bold ph-warning-circle"></i>
+                    <span>Connecting...</span>
+                </div>
+            </header>
+
+            <div class="flex-grow p-6 overflow-y-auto">
+                <!-- Dashboard View -->
+                <div id="dashboardView" class="main-view">
+                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div class="bg-white p-5 rounded-lg shadow"><div class="flex items-center"><div class="p-3 rounded-full bg-blue-100 text-blue-500"><i class="ph-bold ph-shopping-cart text-2xl"></i></div><div class="ml-4"><p class="text-sm text-slate-500">Total Orders</p><p id="totalOrdersStat" class="text-2xl font-bold text-slate-800">0</p></div></div></div>
+                        <div class="bg-white p-5 rounded-lg shadow"><div class="flex items-center"><div class="p-3 rounded-full bg-green-100 text-green-500"><i class="ph-bold ph-money text-2xl"></i></div><div class="ml-4"><p class="text-sm text-slate-500">Total Revenue</p><p id="totalRevenueStat" class="text-2xl font-bold text-slate-800">₹0.00</p></div></div></div>
+                        <div class="bg-white p-5 rounded-lg shadow"><div class="flex items-center"><div class="p-3 rounded-full bg-yellow-100 text-yellow-500"><i class="ph-bold ph-motorcycle text-2xl"></i></div><div class="ml-4"><p class="text-sm text-slate-500">Active Partners</p><p id="activePartnersStat" class="text-2xl font-bold text-slate-800">0</p></div></div></div>
+                        <div class="bg-white p-5 rounded-lg shadow"><div class="flex items-center"><div class="p-3 rounded-full bg-red-100 text-red-500"><i class="ph-bold ph-x-circle text-2xl"></i></div><div class="ml-4"><p class="text-sm text-slate-500">Cancelled Orders</p><p id="cancelledOrdersStat" class="text-2xl font-bold text-slate-800">0</p></div></div></div>
+                    </div>
+                </div>
+
+                <!-- Orders View -->
+                <div id="ordersView" class="main-view hidden">
+                    <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-slate-800">Manage Orders</h2><button id="addOrderBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i class="ph-bold ph-plus mr-2"></i>Add Order</button></div>
+                    <div class="bg-white p-6 rounded-lg shadow overflow-x-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-700 uppercase bg-slate-50"><tr><th class="px-6 py-3 text-left">Order ID</th><th class="px-6 py-3 text-left">Customer</th><th class="px-6 py-3 text-left">Address</th><th class="px-6 py-3 text-left">Amount</th><th class="px-6 py-3 text-left">Status</th><th class="px-6 py-3 text-left">Partner</th><th class="px-6 py-3 text-left">Actions</th></tr></thead><tbody id="allOrdersTable"></tbody></table></div>
+                </div>
+
+                <!-- Partners View -->
+                <div id="partnersView" class="main-view hidden">
+                    <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-slate-800">Manage Partners</h2><button id="addPartnerBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i class="ph-bold ph-plus mr-2"></i>Create Partner</button></div>
+                    <div class="bg-white p-6 rounded-lg shadow overflow-x-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-700 uppercase bg-slate-50"><tr><th class="px-6 py-3 text-left">Partner ID</th><th class="px-6 py-3 text-left">Name</th><th class="px-6 py-3 text-left">Phone</th><th class="px-6 py-3 text-left">Earnings</th><th class="px-6 py-3 text-left">Completed</th><th class="px-6 py-3 text-left">Cancelled</th><th class="px-6 py-3 text-left">Status</th><th class="px-6 py-3 text-left">Actions</th></tr></thead><tbody id="allPartnersTable"></tbody></table></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Modals -->
+    <div id="formModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-container">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md modal-content">
+            <div class="p-6 border-b"><h2 id="modalTitle" class="text-xl font-bold text-slate-800">Modal Title</h2></div>
+            <form id="mainForm" class="space-y-4 p-6">
+                <!-- Dynamic form content here -->
+            </form>
+            <div class="p-4 bg-slate-50 rounded-b-lg flex justify-end space-x-3">
+                <button type="button" id="modalCancelBtn" class="bg-white hover:bg-slate-100 text-slate-700 font-bold py-2 px-4 rounded-lg border">Cancel</button>
+                <button type="submit" form="mainForm" id="modalSubmitBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Submit</button>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, updateDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCVGlcc2oXsIoP2e8-hEFp-0CliGveJ1tc",
+            authDomain: "appd-a0cc8.firebaseapp.com",
+            projectId: "appd-a0cc8",
+            storageBucket: "appd-a0cc8.firebasestorage.app",
+            messagingSenderId: "664002930615",
+            appId: "1:664002930615:web:ff431a85ea086a6d196a32"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const G_DOM = {
+            sidebarNav: document.getElementById('sidebarNav'),
+            headerTitle: document.getElementById('headerTitle'),
+            mainViews: document.querySelectorAll('.main-view'),
+            authStatus: document.getElementById('authStatus'),
+            allOrdersTable: document.getElementById('allOrdersTable'),
+            allPartnersTable: document.getElementById('allPartnersTable'),
+            formModal: document.getElementById('formModal'),
+            modalTitle: document.getElementById('modalTitle'),
+            mainForm: document.getElementById('mainForm'),
+            modalCancelBtn: document.getElementById('modalCancelBtn'),
+            stats: {
+                totalOrders: document.getElementById('totalOrdersStat'),
+                totalRevenue: document.getElementById('totalRevenueStat'),
+                activePartners: document.getElementById('activePartnersStat'),
+                cancelledOrders: document.getElementById('cancelledOrdersStat')
+            }
+        };
+
+        let orders = [];
+        let partners = [];
+        let currentFormType = null;
+
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                G_DOM.authStatus.innerHTML = `<i class="ph-bold ph-check-circle text-green-500"></i><span>Connected</span>`;
+                G_DOM.authStatus.classList.replace('text-red-500', 'text-green-500');
+                subscribeToCollections();
+            } else {
+                G_DOM.authStatus.innerHTML = `<i class="ph-bold ph-x-circle"></i><span>Connection Failed</span>`;
+            }
+        });
+
+        signInAnonymously(auth).catch(error => {
+            console.error("CRITICAL: Anonymous sign-in failed. Please enable it in your Firebase console.", error);
+            G_DOM.authStatus.innerHTML = `<i class="ph-bold ph-x-circle"></i><span>Auth Disabled</span>`;
+        });
+        
+        function subscribeToCollections() {
+            onSnapshot(collection(db, "orders"), (snapshot) => {
+                orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                orders.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+                render();
+            }, error => console.error("Error fetching orders:", error));
+
+            onSnapshot(collection(db, "partners"), (snapshot) => {
+                partners = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                render();
+            }, error => console.error("Error fetching partners:", error));
+        }
+        
+        function render() {
+            const partnerStats = calculatePartnerStats();
+            renderPartnersTable(partnerStats);
+            renderOrdersTable();
+            updateDashboardStats(partnerStats);
+        }
+
+        function calculatePartnerStats() {
+            const stats = {};
+            partners.forEach(p => stats[p.id] = { earnings: 0, completed: 0, cancelled: 0 });
+            orders.forEach(order => {
+                if (!order.partnerId || !stats[order.partnerId]) return;
+                if (order.status === 'Completed') {
+                    stats[order.partnerId].completed++;
+                    stats[order.partnerId].earnings += (order.amount || 0) * 0.15; // 15% commission
+                } else if (order.status === 'Cancelled') {
+                    stats[order.partnerId].cancelled++;
+                }
+            });
+            return stats;
+        }
+
+        const getStatusBadge = (status) => `<span class="text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full ${
+            {'Completed':'bg-green-100 text-green-800','In Transit':'bg-blue-100 text-blue-800','Picked Up':'bg-indigo-100 text-indigo-800','Cancelled':'bg-red-100 text-red-800','New Order':'bg-purple-100 text-purple-800'}[status] || 'bg-slate-100'
+        }">${status}</span>`;
+
+        const tablePlaceholder = (cols, msg) => `<tr><td colspan="${cols}" class="text-center text-slate-400 py-8">${msg}</td></tr>`;
+        
+        function renderOrdersTable() {
+            if (!orders.length) {
+                G_DOM.allOrdersTable.innerHTML = tablePlaceholder(7, "No orders found.");
+                return;
+            }
+            G_DOM.allOrdersTable.innerHTML = orders.map(order => `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-6 py-4 font-medium text-slate-900">#${order.id.substring(0,6)}</td>
+                    <td class="px-6 py-4">${order.customer}</td>
+                    <td class="px-6 py-4">${order.address}</td>
+                    <td class="px-6 py-4">₹${(order.amount || 0).toFixed(2)}</td>
+                    <td class="px-6 py-4">${getStatusBadge(order.status)}</td>
+                    <td class="px-6 py-4">${partners.find(p => p.id === order.partnerId)?.name || 'N/A'}</td>
+                    <td class="px-6 py-4"><button data-id="${order.id}" class="cancel-order-btn text-red-500 hover:text-red-700 font-semibold">Cancel</button></td>
+                </tr>`).join('');
+        }
+
+        function renderPartnersTable(partnerStats) {
+            if (!partners.length) {
+                G_DOM.allPartnersTable.innerHTML = tablePlaceholder(8, "No partners created.");
+                return;
+            }
+            G_DOM.allPartnersTable.innerHTML = partners.map(p => {
+                 const stats = partnerStats[p.id];
+                 return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-6 py-4 font-medium text-slate-900" title="${p.id}">${p.id.substring(0,10)}...</td>
+                        <td class="px-6 py-4">${p.name}</td>
+                        <td class="px-6 py-4">${p.phone}</td>
+                        <td class="px-6 py-4 font-semibold text-green-600">₹${stats.earnings.toFixed(2)}</td>
+                        <td class="px-6 py-4 font-medium text-center">${stats.completed}</td>
+                        <td class="px-6 py-4 font-medium text-center">${stats.cancelled}</td>
+                        <td class="px-6 py-4"><span class="${p.status === 'Online' ? 'text-green-600' : 'text-slate-500'} font-semibold">${p.status}</span></td>
+                        <td class="px-6 py-4"><button data-id="${p.id}" class="delete-partner-btn text-red-500 hover:text-red-700 font-semibold">Delete</button></td>
+                    </tr>`;
+            }).join('');
+        }
+        
+        function updateDashboardStats() {
+            G_DOM.stats.totalOrders.textContent = orders.length;
+            G_DOM.stats.cancelledOrders.textContent = orders.filter(o => o.status === 'Cancelled').length;
+            G_DOM.stats.totalRevenue.textContent = `₹${orders.filter(o => o.status === 'Completed').reduce((sum, o) => sum + (o.amount || 0), 0).toFixed(2)}`;
+            G_DOM.stats.activePartners.textContent = partners.filter(p => p.status === 'Online').length;
+        }
+
+        G_DOM.sidebarNav.addEventListener('click', e => {
+            const link = e.target.closest('.nav-link');
+            if (!link || !link.dataset.view) return;
+            e.preventDefault();
+            const viewId = link.dataset.view;
+            G_DOM.headerTitle.textContent = {'dashboardView':'Dashboard','ordersView':'Manage Orders','partnersView':'Manage Partners'}[viewId];
+            G_DOM.mainViews.forEach(v => v.classList.toggle('hidden', v.id !== viewId));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+        });
+
+        function openFormModal(type) {
+            currentFormType = type;
+            G_DOM.formModal.classList.remove('hidden');
+            if (type === 'order') {
+                G_DOM.modalTitle.textContent = 'Add New Order';
+                G_DOM.mainForm.innerHTML = `
+                    <div><label for="customerName" class="block text-sm">Customer Name</label><input type="text" id="customerName" required class="mt-1 block w-full px-3 py-2 border rounded-md"></div>
+                    <div><label for="deliveryAddress" class="block text-sm">Delivery Address</label><input type="text" id="deliveryAddress" required class="mt-1 block w-full px-3 py-2 border rounded-md"></div>
+                    <div><label for="orderAmount" class="block text-sm">Amount (₹)</label><input type="number" step="0.01" id="orderAmount" required class="mt-1 block w-full px-3 py-2 border rounded-md"></div>`;
+            } else if (type === 'partner') {
+                G_DOM.modalTitle.textContent = 'Create New Partner';
+                G_DOM.mainForm.innerHTML = `
+                    <div><label for="partnerId" class="block text-sm">Partner Auth UID</label><input type="text" id="partnerId" required class="mt-1 block w-full px-3 py-2 border rounded-md" placeholder="From Firebase Authentication"></div>
+                    <div><label for="partnerName" class="block text-sm">Full Name</label><input type="text" id="partnerName" required class="mt-1 block w-full px-3 py-2 border rounded-md"></div>
+                    <div><label for="partnerPhone" class="block text-sm">Phone Number</label><input type="tel" id="partnerPhone" required class="mt-1 block w-full px-3 py-2 border rounded-md"></div>
+                    <div><label for="partnerVehicle" class="block text-sm">Vehicle Model</label><input type="text" id="partnerVehicle" required class="mt-1 block w-full px-3 py-2 border rounded-md"></div>`;
+            }
+        }
+
+        document.getElementById('addOrderBtn').addEventListener('click', () => openFormModal('order'));
+        document.getElementById('addPartnerBtn').addEventListener('click', () => openFormModal('partner'));
+        G_DOM.modalCancelBtn.addEventListener('click', () => G_DOM.formModal.classList.add('hidden'));
+
+        G_DOM.mainForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (currentFormType === 'order') {
+                await addDoc(collection(db, "orders"), {
+                    customer: G_DOM.mainForm.customerName.value, address: G_DOM.mainForm.deliveryAddress.value,
+                    amount: parseFloat(G_DOM.mainForm.orderAmount.value), status: 'New Order',
+                    createdAt: serverTimestamp(), partnerId: null
+                });
+            } else if (currentFormType === 'partner') {
+                const partnerId = G_DOM.mainForm.partnerId.value;
+                await setDoc(doc(db, "partners", partnerId), {
+                    name: G_DOM.mainForm.partnerName.value, phone: G_DOM.mainForm.partnerPhone.value,
+                    vehicle: G_DOM.mainForm.partnerVehicle.value, status: 'Offline'
+                });
+            }
+            G_DOM.formModal.classList.add('hidden');
+            G_DOM.mainForm.reset();
+        });
+
+        document.body.addEventListener('click', async (e) => {
+            const target = e.target;
+            const id = target.dataset.id;
+            if (target.matches('.cancel-order-btn')) {
+                 if (confirm(`Are you sure you want to cancel order #${id.substring(0,6)}?`)) {
+                    await updateDoc(doc(db, "orders", id), { status: 'Cancelled' });
+                }
+            }
+            if (target.matches('.delete-partner-btn')) {
+                 if (confirm(`Are you sure you want to delete partner ${partners.find(p=>p.id===id)?.name}?`)) {
+                    await deleteDoc(doc(db, "partners", id));
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
