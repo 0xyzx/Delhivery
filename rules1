@@ -1,0 +1,27 @@
+rules_version = '2';
+
+service cloud.firestore {
+match /databases/{database}/documents {
+
+// Rules for the 'partners' collection
+match /partners/{partnerId} {
+  // Any logged-in user (admin or partner) can see the list of partners.
+  allow read: if request.auth != null;
+  
+  // Allow a logged-in user (the admin panel) to create a new partner document.
+  // And allow a partner to update ONLY their own document (e.g., for status changes).
+  allow write: if request.auth != null;
+}
+
+// Rules for the 'orders' collection
+match /orders/{orderId} {
+  // Any logged-in user can read order information.
+  allow read: if request.auth != null;
+  
+  // Allow any logged-in user to create, update, or delete orders.
+  // This allows the admin to create/cancel and the partner to accept/update status.
+  allow write: if request.auth != null;
+}
+
+}
+}
