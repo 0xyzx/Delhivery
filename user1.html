@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Delivery Partner Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        html, body { height: 100%; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; touch-action: manipulation; }
+        .toggle-checkbox:checked { right: 0; border-color: #34d399; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #34d399; }
+        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .slide-up-animation { animation: slide-up 0.4s ease-out forwards; }
+        @keyframes shrink-width { from { width: 100%; } to { width: 0%; } }
+        .timer-bar-animation { animation: shrink-width 15s linear forwards; }
+        @keyframes pulse-radar { 0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(96, 165, 250, 0); } 100% { transform: scale(0.8); } }
+        .radar-pulse { animation: pulse-radar 2s infinite; }
+    </style>
+</head>
+<body class="bg-slate-800 antialiased flex items-center justify-center">
+
+    <div id="loadingSpinner" class="text-white text-center">
+        <i class="ph-bold ph-circle-notch text-5xl animate-spin"></i>
+        <p class="mt-2 font-semibold">Connecting...</p>
+    </div>
+
+    <!-- Login View -->
+    <div id="loginView" class="hidden w-full h-full flex flex-col items-center justify-center p-4 bg-white sm:max-w-md sm:h-auto sm:shadow-2xl sm:rounded-2xl">
+        <div class="text-center mb-8"><i class="ph-bold ph-package text-6xl text-blue-500"></i><h1 class="text-3xl font-bold text-slate-800 mt-2">RapidShip Hub</h1><p class="text-slate-500">Partner Login</p></div>
+        <form id="loginForm" class="w-full max-w-sm"><div class="space-y-4"><div><label for="email" class="block text-sm font-medium text-slate-700">Email Address</label><input type="email" id="email" required class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div><div><label for="password" class="block text-sm font-medium text-slate-700">Password</label><input type="password" id="password" required class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div></div><p id="loginError" class="text-red-500 text-sm mt-2 text-center h-4"></p><div class="mt-6"><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg">Log In</button></div></form>
+        <div class="mt-4 text-center"><p class="text-sm text-slate-500">Don't have an account?</p><button id="showSignUp" class="text-sm font-semibold text-blue-600 hover:underline">Create one here</button></div>
+    </div>
+    
+    <!-- Sign Up View -->
+    <div id="signUpView" class="hidden w-full h-full flex-col items-center justify-center p-4 bg-white sm:max-w-md sm:h-auto sm:shadow-2xl sm:rounded-2xl">
+        <div class="text-center mb-8"><i class="ph-bold ph-package text-6xl text-blue-500"></i><h1 class="text-3xl font-bold text-slate-800 mt-2">Create Account</h1><p class="text-slate-500">Partner Sign Up</p></div>
+        <form id="signUpForm" class="w-full max-w-sm"><div class="space-y-4"><div><label for="signUpEmail" class="block text-sm font-medium text-slate-700">Email Address</label><input type="email" id="signUpEmail" required class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm"></div><div><label for="signUpPassword" class="block text-sm font-medium text-slate-700">Password</label><input type="password" id="signUpPassword" required class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm"></div></div><p id="signUpError" class="text-red-500 text-sm mt-2 text-center h-4"></p><div class="mt-6"><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg">Sign Up</button></div></form>
+        <div class="mt-4 text-center"><p class="text-sm text-slate-500">Already have an account?</p><button id="showLogin" class="text-sm font-semibold text-blue-600 hover:underline">Login here</button></div>
+    </div>
+
+    <!-- App Container -->
+    <div id="appContainer" class="hidden w-full h-full sm:max-w-md mx-auto bg-slate-50 sm:shadow-2xl sm:rounded-2xl overflow-hidden flex flex-col sm:h-[calc(100vh-2rem)] sm:max-h-[900px]">
+        <header class="bg-white/80 backdrop-blur-sm shadow-sm p-4 flex justify-between items-center z-10 sticky top-0"><h1 id="welcomeMessage" class="font-bold text-xl text-slate-800">Delivery Hub</h1><div class="flex items-center space-x-3"><span id="statusText" class="text-sm font-semibold text-red-500">Offline</span><div class="relative inline-block w-12 mr-2 align-middle"><input type="checkbox" id="onlineToggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 appearance-none cursor-pointer"/><label for="onlineToggle" class="block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label></div></div></header>
+        <main class="flex-grow overflow-y-auto relative" id="mainContent"></main>
+        <footer class="w-full bg-white border-t p-2 flex justify-around sticky bottom-0 z-10"><button id="homeBtn" class="nav-btn text-blue-600 flex-1 flex flex-col items-center p-2 rounded-lg"><i class="ph-fill ph-house text-2xl"></i><span class="text-xs font-bold">Home</span></button><button id="profileBtn" class="nav-btn text-slate-500 flex-1 flex flex-col items-center p-2 rounded-lg"><i class="ph ph-user text-2xl"></i><span class="text-xs font-medium">Profile</span></button></footer>
+    </div>
+    
+    <div id="modalContainer" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-end justify-center z-50"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, collection, onSnapshot, updateDoc, query, where, limit, runTransaction, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCVGlcc2oXsIoP2e8-hEFp-0CliGveJ1tc",
+            authDomain: "appd-a0cc8.firebaseapp.com",
+            projectId: "appd-a0cc8",
+            storageBucket: "appd-a0cc8.firebasestorage.app", // Corrected URL
+            messagingSenderId: "664002930615",
+            appId: "1:664002930615:web:ff431a85ea086a6d196a32"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const G_DOM = {
+            loadingSpinner: document.getElementById('loadingSpinner'),
+            loginView: document.getElementById('loginView'),
+            signUpView: document.getElementById('signUpView'),
+            appContainer: document.getElementById('appContainer'),
+            mainContent: document.getElementById('mainContent'),
+            modalContainer: document.getElementById('modalContainer'),
+            loginForm: document.getElementById('loginForm'),
+            signUpForm: document.getElementById('signUpForm'),
+            onlineToggle: document.getElementById('onlineToggle'),
+            statusText: document.getElementById('statusText'),
+            welcomeMessage: document.getElementById('welcomeMessage'),
+            homeBtn: document.getElementById('homeBtn'),
+            profileBtn: document.getElementById('profileBtn')
+        };
+
+        let partnerId = null, partnerRef = null, partnerData = null;
+        let unsubscribe = { partner: null, orders: null, newOrders: null };
+        let newOrderTimeout;
+        let currentView = 'home';
+
+        onAuthStateChanged(auth, user => {
+            G_DOM.loadingSpinner.classList.add('hidden');
+            if (user) {
+                G_DOM.loginView.classList.add('hidden');
+                G_DOM.signUpView.classList.add('hidden');
+                G_DOM.appContainer.classList.remove('hidden');
+                initializeAppLogic(user.uid);
+            } else {
+                G_DOM.appContainer.classList.add('hidden');
+                G_DOM.loginView.classList.remove('hidden');
+                Object.values(unsubscribe).forEach(unsub => unsub && unsub());
+                partnerId = partnerRef = partnerData = null;
+            }
+        });
+        
+        function initializeAppLogic(uid) {
+            partnerId = uid;
+            partnerRef = doc(db, "partners", partnerId);
+            unsubscribe.partner = onSnapshot(partnerRef, docSnap => {
+                if (docSnap.exists()) {
+                    partnerData = docSnap.data();
+                    
+                    if (partnerData.accountStatus === 'Suspended') {
+                        G_DOM.appContainer.classList.add('hidden');
+                        signOut(auth);
+                        G_DOM.loginView.classList.remove('hidden');
+                        document.getElementById('loginError').textContent = 'Your account is suspended.';
+                        return;
+                    }
+
+                    updatePartnerUI();
+                    if (currentView === 'home') {
+                        listenForOrders();
+                    } else {
+                        renderProfileView();
+                    }
+                } else {
+                    G_DOM.mainContent.innerHTML = `<div class="p-4 text-center mt-10"><p>Your account is not set up in the admin panel.</p><button id="logoutButton" class="mt-4 bg-red-500 text-white font-bold py-2 px-4 rounded">Logout</button></div>`;
+                }
+            });
+        }
+
+        const switchAuthView = (show) => {
+            G_DOM.loginView.classList.toggle('hidden', show !== 'login');
+            G_DOM.signUpView.classList.toggle('hidden', show !== 'signup');
+        };
+        document.getElementById('showSignUp').addEventListener('click', () => switchAuthView('signup'));
+        document.getElementById('showLogin').addEventListener('click', () => switchAuthView('login'));
+        
+        const handleAuth = (promise, el) => promise.catch(err => el.textContent = err.message.includes('password') ? 'Invalid credentials.' : 'Something went wrong.');
+        G_DOM.loginForm.addEventListener('submit', e => { e.preventDefault(); handleAuth(signInWithEmailAndPassword(auth, G_DOM.loginForm.email.value, G_DOM.loginForm.password.value), G_DOM.loginForm.querySelector('p')); });
+        G_DOM.signUpForm.addEventListener('submit', e => { e.preventDefault(); handleAuth(createUserWithEmailAndPassword(auth, G_DOM.signUpForm.signUpEmail.value, G_DOM.signUpForm.signUpPassword.value), G_DOM.signUpForm.querySelector('p')); });
+        document.body.addEventListener('click', e => { if(e.target.id === 'logoutButton') signOut(auth); });
+
+        G_DOM.onlineToggle.addEventListener('change', () => {
+            if (partnerRef) updateDoc(partnerRef, { status: G_DOM.onlineToggle.checked ? 'Online' : 'Offline' });
+        });
+        
+        function updatePartnerUI() {
+            G_DOM.welcomeMessage.textContent = `Welcome, ${partnerData.name.split(' ')[0]}!`;
+            G_DOM.onlineToggle.checked = partnerData.status === 'Online';
+            G_DOM.statusText.textContent = partnerData.status;
+            G_DOM.statusText.classList.toggle('text-red-500', partnerData.status !== 'Online');
+            G_DOM.statusText.classList.toggle('text-emerald-500', partnerData.status === 'Online');
+        }
+
+        function listenForOrders() {
+            G_DOM.mainContent.classList.add('p-4');
+            if (unsubscribe.orders) unsubscribe.orders();
+            const qActive = query(collection(db, "orders"), where("partnerId", "==", partnerId), where("status", "in", ["In Transit", "Picked Up"]));
+            unsubscribe.orders = onSnapshot(qActive, snapshot => {
+                if (!snapshot.empty) {
+                    clearTimeout(newOrderTimeout);
+                    G_DOM.modalContainer.classList.add('hidden');
+                    renderActiveOrder(snapshot.docs[0].id, snapshot.docs[0].data());
+                } else {
+                    renderIdleView();
+                    listenForNewOrders();
+                }
+            });
+        }
+        
+        function listenForNewOrders() {
+            if (partnerData.status !== 'Online' || currentView !== 'home') return;
+            if (unsubscribe.newOrders) unsubscribe.newOrders();
+            const qNew = query(collection(db, "orders"), where("status", "==", "New Order"), limit(1));
+            unsubscribe.newOrders = onSnapshot(qNew, snapshot => {
+                if (!snapshot.empty) {
+                    const order = snapshot.docs[0].data();
+                    const orderId = snapshot.docs[0].id;
+                    G_DOM.modalContainer.innerHTML = `
+                        <div class="bg-white w-full max-w-md rounded-t-2xl p-5 shadow-lg slide-up-animation">
+                            <h2 class="text-xl font-extrabold text-slate-800">New Delivery Request!</h2>
+                            <p class="text-sm text-slate-500 mb-2">From: <strong>${order.customer}</strong> at ${order.address}</p>
+                            <p class="font-semibold text-lg">Potential Earnings: ~₹${(order.amount * 0.15).toFixed(2)}</p>
+                            <div class="grid grid-cols-2 gap-3 mt-6">
+                                <button id="declineBtn" class="w-full bg-red-100 text-red-700 font-bold py-3 rounded-lg">Decline</button>
+                                <button id="acceptBtn" class="w-full bg-emerald-500 text-white font-bold py-3 rounded-lg">Accept</button>
+                            </div>
+                        </div>`;
+                    G_DOM.modalContainer.classList.remove('hidden');
+                    
+                    document.getElementById('acceptBtn').onclick = () => acceptOrder(orderId);
+                    document.getElementById('declineBtn').onclick = () => { G_DOM.modalContainer.classList.add('hidden'); clearTimeout(newOrderTimeout); };
+                    
+                    newOrderTimeout = setTimeout(() => G_DOM.modalContainer.classList.add('hidden'), 15000);
+                }
+            });
+        }
+        
+        const acceptOrder = async (orderId) => {
+            G_DOM.modalContainer.classList.add('hidden');
+            if(unsubscribe.newOrders) unsubscribe.newOrders();
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const orderRef = doc(db, "orders", orderId);
+                    const orderDoc = await transaction.get(orderRef);
+                    if (!orderDoc.exists() || orderDoc.data().status !== 'New Order') {
+                        throw new Error("Order already taken");
+                    }
+                    transaction.update(orderRef, { partnerId: partnerId, status: "In Transit" });
+                });
+            } catch (e) {
+                G_DOM.mainContent.insertAdjacentHTML('afterbegin', `<div id="orderTakenMsg" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-lg" role="alert"><p class="font-bold">Unavailable</p><p>Sorry, another partner accepted this order.</p></div>`);
+                setTimeout(() => document.getElementById('orderTakenMsg')?.remove(), 5000);
+                listenForNewOrders(); // Start listening again
+            }
+        };
+
+        const renderIdleView = () => G_DOM.mainContent.innerHTML = `<div class="p-4 text-center mt-24 flex flex-col items-center"><div class="relative flex items-center justify-center w-32 h-32"><div class="radar-pulse absolute w-full h-full rounded-full bg-blue-400/50"></div><i class="ph-bold ph-motorcycle text-6xl text-blue-500 z-10"></i></div><h2 class="mt-8 text-xl font-bold text-slate-700">Searching for tasks...</h2></div>`;
+        
+        function renderActiveOrder(id, order) {
+            const isPickedUp = order.status === 'Picked Up';
+            G_DOM.mainContent.innerHTML = `
+                <div class="p-4">
+                    <div class="bg-white p-4 rounded-xl shadow-md mb-4">
+                        <h3 class="font-bold text-lg mb-2">Order #${id.substring(0,6)}</h3>
+                        <p>Status: <strong class="font-semibold">${order.status}</strong></p>
+                        <p>Deliver to: <strong class="font-semibold">${order.customer}</strong></p>
+                        <p class="text-sm text-slate-600">${order.address}</p>
+                         <p class="text-sm text-slate-600">Contact: ${order.contact || 'N/A'}</p>
+                         <p class="mt-2 font-bold">Amount: ₹${order.amount.toFixed(2)} (${order.paymentMethod})</p>
+                    </div>
+                    <button id="actionBtn" class="w-full text-white font-bold py-4 px-4 rounded-xl shadow-lg transition-transform active:scale-95 ${isPickedUp ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}">${isPickedUp ? 'Confirm Delivery' : 'Confirm Pickup'}</button>
+                    <button id="cancelBtn" class="mt-3 w-full text-sm text-center font-semibold text-slate-500">Cancel Order</button>
+                </div>
+            `;
+            document.getElementById('actionBtn').onclick = async () => {
+                const newStatus = isPickedUp ? 'Completed' : 'Picked Up';
+                await updateDoc(doc(db, "orders", id), { status: newStatus });
+                
+                if (newStatus === 'Completed') {
+                    const earning = parseFloat((Math.random() * 5 + 5).toFixed(2));
+                    await updateDoc(partnerRef, { 
+                        totalEarnings: increment(earning),
+                        completedDeliveries: increment(1)
+                    });
+                    
+                    G_DOM.modalContainer.innerHTML = `
+                        <div class="bg-white w-full max-w-md rounded-t-2xl p-6 shadow-lg slide-up-animation text-center">
+                            <i class="ph-bold ph-confetti text-6xl text-green-500"></i>
+                            <h2 class="text-2xl font-extrabold text-slate-800 mt-2">Delivery Complete!</h2>
+                            <p class="font-semibold text-xl mt-2">You earned: <span class="text-green-600">₹${earning.toFixed(2)}</span></p>
+                            <p class="text-sm text-slate-500 mt-1">This has been added to your total earnings.</p>
+                            <button id="earningOkBtn" class="w-full mt-6 bg-blue-600 text-white font-bold py-3 rounded-lg">Awesome!</button>
+                        </div>`;
+                    G_DOM.modalContainer.classList.remove('hidden');
+                    document.getElementById('earningOkBtn').onclick = () => G_DOM.modalContainer.classList.add('hidden');
+                }
+            };
+            document.getElementById('cancelBtn').onclick = async () => {
+                await updateDoc(doc(db, "orders", id), { status: 'New Order', partnerId: null });
+            };
+        }
+
+        function renderProfileView() {
+            G_DOM.mainContent.classList.remove('p-4');
+            G_DOM.mainContent.innerHTML = `
+                <div class="p-4">
+                    <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                        <i class="ph-bold ph-user-circle text-6xl text-slate-400"></i>
+                        <h2 class="text-2xl font-bold text-slate-800 mt-2">${partnerData.name}</h2>
+                        <p class="text-slate-500">${partnerData.phone}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-4">
+                        <div class="bg-white p-4 rounded-xl shadow-md text-center">
+                            <p class="text-sm font-medium text-slate-500">Total Earnings</p>
+                            <p class="text-2xl font-bold text-green-600">₹${(partnerData.totalEarnings || 0).toFixed(2)}</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-md text-center">
+                             <p class="text-sm font-medium text-slate-500">Deliveries</p>
+                            <p class="text-2xl font-bold text-blue-600">${partnerData.completedDeliveries || 0}</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-md mt-4">
+                         <h3 class="font-bold text-lg mb-2 text-slate-800">Vehicle Information</h3>
+                         <p class="text-slate-600"><strong>Model:</strong> ${partnerData.vehicle}</p>
+                    </div>
+                    <button id="logoutButton" class="w-full mt-6 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg">Logout</button>
+                </div>`;
+        }
+
+        function setActiveView(view) {
+            currentView = view;
+            if (view === 'home') {
+                G_DOM.homeBtn.classList.add('text-blue-600');
+                G_DOM.homeBtn.classList.remove('text-slate-500');
+                G_DOM.homeBtn.querySelector('i').classList.add('ph-fill');
+                G_DOM.homeBtn.querySelector('span').classList.add('font-bold');
+                
+                G_DOM.profileBtn.classList.add('text-slate-500');
+                G_DOM.profileBtn.classList.remove('text-blue-600');
+                G_DOM.profileBtn.querySelector('i').classList.remove('ph-fill');
+                G_DOM.profileBtn.querySelector('span').classList.remove('font-bold');
+
+                listenForOrders();
+            } else {
+                G_DOM.profileBtn.classList.add('text-blue-600');
+                G_DOM.profileBtn.classList.remove('text-slate-500');
+                G_DOM.profileBtn.querySelector('i').classList.add('ph-fill');
+                G_DOM.profileBtn.querySelector('span').classList.add('font-bold');
+                
+                G_DOM.homeBtn.classList.add('text-slate-500');
+                G_DOM.homeBtn.classList.remove('text-blue-600');
+                G_DOM.homeBtn.querySelector('i').classList.remove('ph-fill');
+                G_DOM.homeBtn.querySelector('span').classList.remove('font-bold');
+
+                if(unsubscribe.newOrders) unsubscribe.newOrders();
+                if(unsubscribe.orders) unsubscribe.orders();
+                renderProfileView();
+            }
+        }
+
+        G_DOM.homeBtn.addEventListener('click', () => setActiveView('home'));
+        G_DOM.profileBtn.addEventListener('click', () => setActiveView('profile'));
+
+    </script>
+</body>
+</html>
+
